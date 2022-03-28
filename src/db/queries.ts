@@ -71,4 +71,28 @@ export default {
       ${+day.plus}, 
       ${day.gkal});
   `,
+  deleteDay: (date: string) => `
+    DELETE FROM [Apps].[dbo].[gen_electricity] WHERE date = '${new Date(
+      date
+    ).getFullYear()}-${new Date(date).getMonth() + 1}-${new Date(
+    date
+  ).getDate()}';
+  `,
+  getDaysSinceYear: (year: number) => `
+  SELECT  
+        [date]
+        ,[production]
+        ,[total_consumed]
+        ,[ZBC_consumed]
+        ,[generation]
+        ,[procentage]
+        ,[sold]
+        ,[RUP_consumed]
+        ,[power]
+        ,[plus]
+        ,[gkal]
+    FROM [Apps].[dbo].[gen_electricity] 
+        where DATEPART(YEAR, date) < ${year}
+    ORDER BY date;
+  `,
 };

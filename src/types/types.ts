@@ -12,7 +12,7 @@ export interface IYear {
 }
 
 export interface IDay {
-  date: Date;
+  date: string;
   production: number;
   total_consumed: number;
   ZBC_consumed: number;
@@ -23,4 +23,10 @@ export interface IDay {
   power: number;
   plus: boolean;
   gkal: number;
+}
+
+export enum RESULT {
+  ok,
+  error,
+  idle,
 }
