@@ -17,7 +17,7 @@ export default {
     ORDER BY DATEPART(YEAR, date);
     `,
   getDays: (year: number) => `
-    SELECT TOP (366) 
+    SELECT 
         [date]
         ,[production]
         ,[total_consumed]
@@ -78,7 +78,7 @@ export default {
     date
   ).getDate()}';
   `,
-  getDaysSinceYear: (year: number) => `
+  getAllDays: () => `
   SELECT  
         [date]
         ,[production]
@@ -92,7 +92,6 @@ export default {
         ,[plus]
         ,[gkal]
     FROM [Apps].[dbo].[gen_electricity] 
-        where DATEPART(YEAR, date) < ${year}
     ORDER BY date;
   `,
 };

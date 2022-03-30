@@ -1,16 +1,172 @@
 import sql from "mssql";
-import { IDay, IYear, RESULT } from "../types/types";
+import { IDay, IKvartal, IMonth, IYear, MONTHS, RESULT } from "../types/types";
 import QUERIES from "./queries";
 import xl from "excel4node";
 import path from "path";
+import { getKvartalNumber } from "../helpers/helpers";
 
-export const generateExcel = async (): Promise<RESULT> => {
+export const generateExcel = async (
+  expandedRows: string[]
+): Promise<RESULT> => {
+  let months: IMonth[] = [];
+  let kvartals: IKvartal[] = [];
+  let years: IYear[] = [];
+
   try {
     await sql.connect(process.env.SQL_STRING);
 
-    const resultDays = await sql.query(QUERIES.getDaysSinceYear(2020));
+    const resultDays = await sql.query(QUERIES.getAllDays());
 
     const days: IDay[] = resultDays.recordset;
+
+    // Определяем месяца
+    days.forEach((day) => {
+      const year = new Date(day.date).getFullYear();
+      const month = new Date(day.date).getMonth() + 1;
+      const kvartal = getKvartalNumber(month);
+
+      const monthIndex = months.findIndex(
+        (item) => item.month === month && item.year === year
+      );
+
+      const isExpanded =
+        expandedRows.includes(
+          `year_${year}.kvartal_${kvartal}.month_${month}`
+        ) || expandedRows.length === 0;
+
+      // Если месяц уже есть до добавляем к нему данные за день
+      if (monthIndex > -1) {
+        const monthFound = months[monthIndex];
+
+        months[monthIndex] = {
+          ...monthFound,
+          production: monthFound.production + day.production,
+          total_consumed: monthFound.total_consumed + day.total_consumed,
+          ZBC_consumed: monthFound.ZBC_consumed + day.ZBC_consumed,
+          generation: monthFound.generation + day.generation,
+          procentage: monthFound.procentage + day.procentage,
+          sold: monthFound.sold + day.sold,
+          RUP_consumed: monthFound.RUP_consumed + day.RUP_consumed,
+          power: monthFound.power + day.power,
+          gkal: monthFound.gkal + day.gkal,
+          children: isExpanded ? [...monthFound.children, day] : [],
+        };
+      } else {
+        // Если нету - добавляем первый день
+        months.push({
+          month: month,
+          year: year,
+          date: day.date,
+          production: day.production,
+          total_consumed: day.total_consumed,
+          ZBC_consumed: day.ZBC_consumed,
+          generation: day.generation,
+          procentage: day.procentage,
+          sold: day.sold,
+          RUP_consumed: day.RUP_consumed,
+          power: day.power,
+          plus: day.plus,
+          gkal: day.gkal,
+          children: isExpanded ? [day] : [],
+        });
+      }
+    });
+
+    // Определяем кварталы
+    months.forEach((month) => {
+      const year = month.year;
+      const kvartal = getKvartalNumber(month.month);
+
+      const kvartalIndex = kvartals.findIndex(
+        (item) => item.year === month.year && item.kvartal === kvartal
+      );
+
+      const isExpanded =
+        expandedRows.includes(`year_${year}.kvartal_${kvartal}`) ||
+        expandedRows.length === 0;
+
+      // Если квартал уже есть до добавляем к нему данные за месяц
+      if (kvartalIndex > -1) {
+        const kvartalFound = kvartals[kvartalIndex];
+
+        kvartals[kvartalIndex] = {
+          ...kvartalFound,
+          production: kvartalFound.production + month.production,
+          total_consumed: kvartalFound.total_consumed + month.total_consumed,
+          ZBC_consumed: kvartalFound.ZBC_consumed + month.ZBC_consumed,
+          generation: kvartalFound.generation + month.generation,
+          procentage: kvartalFound.procentage + month.procentage,
+          sold: kvartalFound.sold + month.sold,
+          RUP_consumed: kvartalFound.RUP_consumed + month.RUP_consumed,
+          power: kvartalFound.power + month.power,
+          gkal: kvartalFound.gkal + month.gkal,
+          children: isExpanded ? [...kvartalFound.children, month] : [],
+        };
+      } else {
+        // Если нету - добавляем первый месяц
+        kvartals.push({
+          kvartal: kvartal,
+          year: month.year,
+          date: month.date,
+          production: month.production,
+          total_consumed: month.total_consumed,
+          ZBC_consumed: month.ZBC_consumed,
+          generation: month.generation,
+          procentage: month.procentage,
+          sold: month.sold,
+          RUP_consumed: month.RUP_consumed,
+          power: month.power,
+          plus: false,
+          gkal: month.gkal,
+          children: isExpanded ? [month] : [],
+        });
+      }
+    });
+
+    // Определяем года
+    kvartals.forEach((kvartal) => {
+      const yearIndex = years.findIndex((item) => item.year === kvartal.year);
+
+      const isExpanded =
+        expandedRows.includes(`year_${kvartal.year}`) ||
+        expandedRows.length === 0;
+
+      // Если год уже есть до добавляем к нему данные за квартал
+      if (yearIndex > -1) {
+        const yearFound = years[yearIndex];
+
+        years[yearIndex] = {
+          ...yearFound,
+          production: yearFound.production + kvartal.production,
+          total_consumed: yearFound.total_consumed + kvartal.total_consumed,
+          ZBC_consumed: yearFound.ZBC_consumed + kvartal.ZBC_consumed,
+          generation: yearFound.generation + kvartal.generation,
+          procentage: yearFound.procentage + kvartal.procentage,
+          sold: yearFound.sold + kvartal.sold,
+          RUP_consumed: yearFound.RUP_consumed + kvartal.RUP_consumed,
+          power: yearFound.power + kvartal.power,
+          gkal: yearFound.gkal + kvartal.gkal,
+          children: isExpanded ? [...yearFound.children, kvartal] : [],
+        };
+      } else {
+        // Если нету - добавляем первый квартал
+        years.push({
+          year: kvartal.year,
+          date: kvartal.year.toString(),
+          production: kvartal.production,
+          total_consumed: kvartal.total_consumed,
+          ZBC_consumed: kvartal.ZBC_consumed,
+          generation: kvartal.generation,
+          procentage: kvartal.procentage,
+          sold: kvartal.sold,
+          RUP_consumed: kvartal.RUP_consumed,
+          power: kvartal.power,
+          plus: false,
+          gkal: kvartal.gkal,
+          children: isExpanded ? [kvartal] : [],
+        });
+      }
+    });
 
     const wb = new xl.Workbook({
       defaultFont: {
@@ -124,48 +280,98 @@ export const generateExcel = async (): Promise<RESULT> => {
     ws.cell(4, 9, 4, 10, true).string("Мощность, МВт").style(styleCell);
     ws.cell(4, 11).string("Гкал").style(styleCell);
 
-    for (let i = 0; i < days.length; i++) {
-      ws.cell(5 + i, 1)
-        .string(`c 1 по ${new Date(days[i].date).getDate()}`)
+    let index = 5;
+
+    years.map((year) => {
+      ws.cell(index, 1).number(year.year).style(styleCell);
+      ws.cell(index, 2).number(year.production).style(styleCell);
+      ws.cell(index, 3).number(year.total_consumed).style(styleCell);
+      ws.cell(index, 4).number(year.ZBC_consumed).style(styleCell);
+      ws.cell(index, 5).number(year.generation).style(styleCell);
+      ws.cell(index, 6).number(year.procentage).style(styleCell);
+      ws.cell(index, 7).number(year.sold).style(styleCell);
+      ws.cell(index, 8).number(year.RUP_consumed).style(styleCell);
+      ws.cell(index, 9).number(year.power).style(styleCell);
+      ws.cell(index, 10)
+        .string(year.plus ? "" : "+")
         .style(styleCell);
-      ws.cell(5 + i, 2)
-        .number(days[i].production)
-        .style(styleCell);
-      ws.cell(5 + i, 3)
-        .number(days[i].total_consumed)
-        .style(styleCell);
-      ws.cell(5 + i, 4)
-        .number(days[i].ZBC_consumed)
-        .style(styleCell);
-      ws.cell(5 + i, 5)
-        .number(days[i].generation)
-        .style(styleCell);
-      ws.cell(5 + i, 6)
-        .number(days[i].procentage)
-        .style(styleCell);
-      ws.cell(5 + i, 7)
-        .number(days[i].sold)
-        .style(styleCell);
-      ws.cell(5 + i, 8)
-        .number(days[i].RUP_consumed)
-        .style(styleCell);
-      ws.cell(5 + i, 9)
-        .number(days[i].power)
-        .style(styleCell);
-      ws.cell(5 + i, 10)
-        .string(days[i].plus ? "" : "+")
-        .style(styleCell);
-      ws.cell(5 + i, 11)
-        .number(days[i].gkal)
-        .style(styleCell);
-    }
+      ws.cell(index, 11).number(year.gkal).style(styleCell);
+
+      index++;
+
+      year.children.forEach((kvartal) => {
+        ws.cell(index, 1).string(`${kvartal.kvartal} квартал`).style(styleCell);
+        ws.cell(index, 2).number(kvartal.production).style(styleCell);
+        ws.cell(index, 3).number(kvartal.total_consumed).style(styleCell);
+        ws.cell(index, 4).number(kvartal.ZBC_consumed).style(styleCell);
+        ws.cell(index, 5).number(kvartal.generation).style(styleCell);
+        ws.cell(index, 6).number(kvartal.procentage).style(styleCell);
+        ws.cell(index, 7).number(kvartal.sold).style(styleCell);
+        ws.cell(index, 8).number(kvartal.RUP_consumed).style(styleCell);
+        ws.cell(index, 9).number(kvartal.power).style(styleCell);
+        ws.cell(index, 10)
+          .string(kvartal.plus ? "" : "+")
+          .style(styleCell);
+        ws.cell(index, 11).number(kvartal.gkal).style(styleCell);
+
+        index++;
+
+        kvartal.children.map((month) => {
+          ws.cell(index, 1)
+            .string(`${MONTHS[month.month - 1]}`)
+            .style(styleCell);
+          ws.cell(index, 2).number(month.production).style(styleCell);
+          ws.cell(index, 3).number(month.total_consumed).style(styleCell);
+          ws.cell(index, 4).number(month.ZBC_consumed).style(styleCell);
+          ws.cell(index, 5).number(month.generation).style(styleCell);
+          ws.cell(index, 6).number(month.procentage).style(styleCell);
+          ws.cell(index, 7).number(month.sold).style(styleCell);
+          ws.cell(index, 8).number(month.RUP_consumed).style(styleCell);
+          ws.cell(index, 9).number(month.power).style(styleCell);
+          ws.cell(index, 10)
+            .string(month.plus ? "" : "+")
+            .style(styleCell);
+          ws.cell(index, 11).number(month.gkal).style(styleCell);
+
+          index++;
+
+          month.children.map((day) => {
+            ws.cell(index, 1)
+              .string(`с 1 по ${new Date(day.date).getDate()}`)
+              .style(styleCell);
+            ws.cell(index, 2).number(day.production).style(styleCell);
+            ws.cell(index, 3).number(day.total_consumed).style(styleCell);
+            ws.cell(index, 4).number(day.ZBC_consumed).style(styleCell);
+            ws.cell(index, 5).number(day.generation).style(styleCell);
+            ws.cell(index, 6).number(day.procentage).style(styleCell);
+            ws.cell(index, 7).number(day.sold).style(styleCell);
+            ws.cell(index, 8).number(day.RUP_consumed).style(styleCell);
+            ws.cell(index, 9).number(day.power).style(styleCell);
+            ws.cell(index, 10)
+              .string(day.plus ? "" : "+")
+              .style(styleCell);
+            ws.cell(index, 11).number(day.gkal).style(styleCell);
+
+            index++;
+          });
+        });
+      });
+    });
 
     const filePath = path.join(
       __dirname,
       "../../data/Выработка и потребление электроэнергии.xlsx"
     );
 
-    wb.write(filePath);
+    await new Promise((resolve, reject) => {
+      wb.write(filePath, (err, status) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(status);
+        }
+      });
+    });
 
     return RESULT.ok;
   } catch (err) {

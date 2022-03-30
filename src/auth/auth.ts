@@ -7,8 +7,6 @@ export const generateToken = (id: number): any => {
 };
 
 export const verifyToken = async (req, res, next) => {
-  console.log("VERIFY_TOKEN");
-
   const token = req.cookies.token || "";
 
   try {
@@ -24,7 +22,8 @@ export const verifyToken = async (req, res, next) => {
 
     next();
   } catch (err) {
-    return res.status(500).json(err.toString());
+    console.log((err as Error).message);
+    return res.status(500);
   }
 };
 
@@ -50,7 +49,7 @@ export const verifyUser = async (req, res, next) => {
 
     next();
   } catch (err) {
-    console.log(err);
+    console.log((err as Error).message);
     return res.status(500);
   }
 };

@@ -1,0 +1,9 @@
+version: "3.3"
+services:
+  gen_electricity_server:
+    build: .
+    restart: unless-stopped
+    image: gen_electricity_server
+    container_name: gen_electricity_server_co
+    ports:
+      - "5107:5107"

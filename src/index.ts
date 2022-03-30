@@ -13,9 +13,9 @@ import { generateToken, verifyToken, verifyUser } from "./auth/auth";
 
 const app = express();
 const host = "localhost";
-const port = process.env.PORT || 9081;
+const port = process.env.PORT || 3000;
 
-app.use(cors({ credentials: true, origin: "http://localhost:3000" }));
+app.use(cors({ credentials: true, origin: ["http://10.1.15.244"] }));
 // Добавляем парсер Cookies
 app.use(cookieParser());
 
@@ -60,10 +60,11 @@ app.post("/delete_day", verifyToken, (req, res) => {
   res.sendStatus(200);
 });
 
-app.get("/gen_excel", verifyToken, async (req, res) => {
+app.post("/gen_excel", verifyToken, async (req, res) => {
   // await new Promise((resolve) => setTimeout(resolve, 3000));
+  const data = req.body.data;
 
-  generateExcel()
+  generateExcel(data)
     .then((result) => res.json(result))
     .catch(() => res.json(RESULT.error));
 });
@@ -115,7 +116,6 @@ app.get("/logout", async (req, res) => {
 // Достаем пользователя если он есть
 app.get("/get_user", verifyUser, async (req, res) => {
   console.log("GET_USER");
-
   try {
     const { id } = (req as any).user;
 
@@ -140,7 +140,7 @@ app.get("/get_user", verifyUser, async (req, res) => {
   }
 });
 
-app.listen(parseInt("" + port), host, function () {
+app.listen(parseInt("" + port), function () {
   console.log(
     `Gen Electricity Server listens http://${host}:${port} :: ${new Date()}`
   );
