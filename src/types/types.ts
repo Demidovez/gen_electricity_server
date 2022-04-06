@@ -62,6 +62,15 @@ export interface IDay {
   gkal: number;
 }
 
+export interface IUser {
+  id: number;
+  login: string;
+  firstname: string;
+  lastname: string;
+  secondname: string;
+  role: string;
+}
+
 export enum RESULT {
   ok,
   error,

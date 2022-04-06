@@ -94,4 +94,24 @@ export default {
     FROM [Apps].[dbo].[gen_electricity] 
     ORDER BY date;
   `,
+  checkDayByDate: (date: string) => `
+    SELECT *
+    FROM [Apps].[dbo].[gen_electricity] 
+    WHERE [date] = '${new Date(date).getFullYear()}-${
+    new Date(date).getMonth() + 1
+  }-${new Date(date).getDate()}'
+  `,
+  getUser: (login: string, password: string) => `
+    SELECT id, first_name as firstname, last_name as lastname, last_name_2 as secondname, login 
+    FROM [Apps].[dbo].[users]
+    WHERE 
+      login = '${login}' AND
+      password = '${password}'
+  `,
+  getUserByID: (id: string) => `
+    SELECT id, first_name as firstname, last_name as lastname, last_name_2 as secondname, login 
+    FROM [Apps].[dbo].[users]
+    WHERE 
+      id = '${id}'
+  `,
 };

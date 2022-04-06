@@ -28,8 +28,6 @@ export const verifyToken = async (req, res, next) => {
 };
 
 export const verifyUser = async (req, res, next) => {
-  console.log("VERIFY_USER");
-
   const token = req.cookies.token || "";
 
   try {

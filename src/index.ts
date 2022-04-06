@@ -3,19 +3,24 @@ import fs from "fs";
 import cors from "cors";
 import { getDays, getYears } from "./db/get_data";
 import { updateData } from "./db/update_data";
-import { insertData } from "./db/insert_data";
+import { checkHasDayByDate, insertData } from "./db/insert_data";
 import { deleteData } from "./db/delete_data";
 import path from "path";
 import { generateExcel } from "./db/generate_excel";
-import { RESULT } from "./types/types";
+import { IUser, RESULT } from "./types/types";
 import cookieParser from "cookie-parser";
 import { generateToken, verifyToken, verifyUser } from "./auth/auth";
+import { getUser, getUserById } from "./db/get_user";
 
 const app = express();
-const host = "localhost";
 const port = process.env.PORT || 3000;
 
-app.use(cors({ credentials: true, origin: ["http://10.1.15.244"] }));
+app.use(
+  cors({
+    credentials: true,
+    origin: ["http://10.1.15.244", "http://localhost:3000"],
+  })
+);
 // Добавляем парсер Cookies
 app.use(cookieParser());
 
@@ -39,17 +44,18 @@ app.get("/get_days/:year", verifyToken, async (req, res) => {
 app.post("/update_day", verifyToken, (req, res) => {
   const day = req.body.data;
 
-  updateData(day);
-
-  res.sendStatus(200);
+  updateData(day)
+    .then(() => res.send(""))
+    .catch((error) => res.send(error));
 });
 
 app.post("/insert_day", verifyToken, (req, res) => {
   const day = req.body.data;
 
-  insertData(day);
-
-  res.sendStatus(200);
+  checkHasDayByDate(day)
+    .then(() => insertData(day))
+    .then(() => res.send(""))
+    .catch((error) => res.send(error));
 });
 
 app.post("/delete_day", verifyToken, (req, res) => {
@@ -82,29 +88,21 @@ app.get("/get_excel", verifyToken, (req, res) => {
 app.post("/login", async (req, res) => {
   const { login, password } = req.body;
 
-  if (login === "admin" && password === "12345") {
-    const user = {
-      id: 100,
-      login: "admin",
-      firstname: "Администратор",
-      lastname: "Системы",
-      role: "administrator",
-    };
+  await getUser(login, password)
+    .then(async (user: IUser) => {
+      if (user) {
+        const token = await generateToken(user.id);
 
-    if (user) {
-      const token = await generateToken(user.id);
+        res.cookie("token", token, {
+          secure: false,
+          sameSite: "lax",
+          httpOnly: false,
+        });
+      }
 
-      res.cookie("token", token, {
-        secure: false,
-        sameSite: "lax",
-        httpOnly: false,
-      });
-    }
-
-    res.json(user);
-  } else {
-    res.json({});
-  }
+      res.json(user);
+    })
+    .catch(() => res.json({}));
 });
 
 // Пытаемся разлогинить пользователя
@@ -115,25 +113,16 @@ app.get("/logout", async (req, res) => {
 
 // Достаем пользователя если он есть
 app.get("/get_user", verifyUser, async (req, res) => {
-  console.log("GET_USER");
   try {
     const { id } = (req as any).user;
 
-    if (id) {
-      // const user = await database.getUser(id);
+    if (!id) throw new Error("Нету ID!");
 
-      const user = {
-        id: 100,
-        login: "admin",
-        firstname: "Администратор",
-        lastname: "Системы",
-        role: "administrator",
-      };
-
-      res.json(user);
-    } else {
-      res.json(null);
-    }
+    await getUserById(id)
+      .then(async (user: IUser) => {
+        res.json(user);
+      })
+      .catch(() => res.json(null));
   } catch (err) {
     console.log(err);
     res.json(null);
@@ -141,7 +130,5 @@ app.get("/get_user", verifyUser, async (req, res) => {
 });
 
 app.listen(parseInt("" + port), function () {
-  console.log(
-    `Gen Electricity Server listens http://${host}:${port} :: ${new Date()}`
-  );
+  console.log(`Gen Electricity Server listens on ${port} :: ${new Date()}`);
 });
