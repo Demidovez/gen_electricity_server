@@ -8,10 +8,11 @@ export interface IYear {
   procentage: number;
   sold: number;
   RUP_consumed: number;
-  power: number;
+  power: number | null;
   plus: boolean;
   gkal: number;
   children: IKvartal[];
+  shadow_children: IKvartal[];
 }
 
 export interface IKvartal {
@@ -25,10 +26,11 @@ export interface IKvartal {
   procentage: number;
   sold: number;
   RUP_consumed: number;
-  power: number;
+  power: number | null;
   plus: boolean;
   gkal: number;
   children: IMonth[];
+  shadow_children: IMonth[];
 }
 
 export interface IMonth {
@@ -42,10 +44,11 @@ export interface IMonth {
   procentage: number;
   sold: number;
   RUP_consumed: number;
-  power: number;
+  power: number | null;
   plus: boolean;
   gkal: number;
   children: IDay[];
+  shadow_children: IDay[];
 }
 
 export interface IDay {
@@ -57,7 +60,7 @@ export interface IDay {
   procentage: number;
   sold: number;
   RUP_consumed: number;
-  power: number;
+  power: number | null;
   plus: boolean;
   gkal: number;
 }

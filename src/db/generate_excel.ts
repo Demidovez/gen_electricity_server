@@ -44,12 +44,19 @@ export const generateExcel = async (
           total_consumed: monthFound.total_consumed + day.total_consumed,
           ZBC_consumed: monthFound.ZBC_consumed + day.ZBC_consumed,
           generation: monthFound.generation + day.generation,
-          procentage: monthFound.procentage + day.procentage,
+          procentage: Number(
+            Number(
+              ((monthFound.generation + day.generation) /
+                (monthFound.total_consumed + day.total_consumed)) *
+                100
+            ).toFixed(2)
+          ),
           sold: monthFound.sold + day.sold,
           RUP_consumed: monthFound.RUP_consumed + day.RUP_consumed,
-          power: monthFound.power + day.power,
+          power: null,
           gkal: monthFound.gkal + day.gkal,
           children: isExpanded ? [...monthFound.children, day] : [],
+          shadow_children: [...monthFound.shadow_children, day],
         };
       } else {
         // Если нету - добавляем первый день
@@ -61,16 +68,36 @@ export const generateExcel = async (
           total_consumed: day.total_consumed,
           ZBC_consumed: day.ZBC_consumed,
           generation: day.generation,
-          procentage: day.procentage,
+          procentage: Number(
+            Number((day.generation / day.total_consumed) * 100).toFixed(2)
+          ),
           sold: day.sold,
           RUP_consumed: day.RUP_consumed,
-          power: day.power,
-          plus: day.plus,
+          power: null,
+          plus: false,
           gkal: day.gkal,
           children: isExpanded ? [day] : [],
+          shadow_children: [day],
         });
       }
     });
+
+    months = months.map((month) => ({
+      ...month,
+      power: +parseFloat(
+        "" +
+          month.shadow_children.reduce((a, b) => a + (b.power || 0), 0) /
+            month.shadow_children.length
+      ).toFixed(2),
+      plus:
+        month.shadow_children.reduce((a, b) => a + +b.plus, 0) >=
+        month.shadow_children.length / 2,
+      children: month.children.sort(
+        (a, b) =>
+          new Date((a as IDay).date).getTime() -
+          new Date((b as IDay).date).getTime()
+      ),
+    }));
 
     // Определяем кварталы
     months.forEach((month) => {
@@ -95,12 +122,19 @@ export const generateExcel = async (
           total_consumed: kvartalFound.total_consumed + month.total_consumed,
           ZBC_consumed: kvartalFound.ZBC_consumed + month.ZBC_consumed,
           generation: kvartalFound.generation + month.generation,
-          procentage: kvartalFound.procentage + month.procentage,
+          procentage: Number(
+            Number(
+              ((kvartalFound.generation + month.generation) /
+                (kvartalFound.total_consumed + month.total_consumed)) *
+                100
+            ).toFixed(2)
+          ),
           sold: kvartalFound.sold + month.sold,
           RUP_consumed: kvartalFound.RUP_consumed + month.RUP_consumed,
-          power: kvartalFound.power + month.power,
+          power: null,
           gkal: kvartalFound.gkal + month.gkal,
           children: isExpanded ? [...kvartalFound.children, month] : [],
+          shadow_children: [...kvartalFound.shadow_children, month],
         };
       } else {
         // Если нету - добавляем первый месяц
@@ -112,13 +146,16 @@ export const generateExcel = async (
           total_consumed: month.total_consumed,
           ZBC_consumed: month.ZBC_consumed,
           generation: month.generation,
-          procentage: month.procentage,
+          procentage: Number(
+            Number((month.generation / month.total_consumed) * 100).toFixed(2)
+          ),
           sold: month.sold,
           RUP_consumed: month.RUP_consumed,
-          power: month.power,
+          power: null,
           plus: false,
           gkal: month.gkal,
           children: isExpanded ? [month] : [],
+          shadow_children: [month],
         });
       }
     });
@@ -141,12 +178,19 @@ export const generateExcel = async (
           total_consumed: yearFound.total_consumed + kvartal.total_consumed,
           ZBC_consumed: yearFound.ZBC_consumed + kvartal.ZBC_consumed,
           generation: yearFound.generation + kvartal.generation,
-          procentage: yearFound.procentage + kvartal.procentage,
+          procentage: Number(
+            Number(
+              ((yearFound.generation + kvartal.generation) /
+                (yearFound.total_consumed + kvartal.total_consumed)) *
+                100
+            ).toFixed(2)
+          ),
           sold: yearFound.sold + kvartal.sold,
           RUP_consumed: yearFound.RUP_consumed + kvartal.RUP_consumed,
-          power: yearFound.power + kvartal.power,
+          power: null,
           gkal: yearFound.gkal + kvartal.gkal,
           children: isExpanded ? [...yearFound.children, kvartal] : [],
+          shadow_children: [...yearFound.shadow_children, kvartal],
         };
       } else {
         // Если нету - добавляем первый квартал
@@ -157,13 +201,18 @@ export const generateExcel = async (
           total_consumed: kvartal.total_consumed,
           ZBC_consumed: kvartal.ZBC_consumed,
           generation: kvartal.generation,
-          procentage: kvartal.procentage,
+          procentage: Number(
+            Number((kvartal.generation / kvartal.total_consumed) * 100).toFixed(
+              2
+            )
+          ),
           sold: kvartal.sold,
           RUP_consumed: kvartal.RUP_consumed,
-          power: kvartal.power,
+          power: null,
           plus: false,
           gkal: kvartal.gkal,
           children: isExpanded ? [kvartal] : [],
+          shadow_children: [kvartal],
         });
       }
     });
@@ -291,9 +340,11 @@ export const generateExcel = async (
       ws.cell(index, 6).number(year.procentage).style(styleCell);
       ws.cell(index, 7).number(year.sold).style(styleCell);
       ws.cell(index, 8).number(year.RUP_consumed).style(styleCell);
-      ws.cell(index, 9).number(year.power).style(styleCell);
+      year.power !== null
+        ? ws.cell(index, 9).number(year.power).style(styleCell)
+        : ws.cell(index, 9).string("").style(styleCell);
       ws.cell(index, 10)
-        .string(year.plus ? "" : "+")
+        .string(year.plus ? "+" : "")
         .style(styleCell);
       ws.cell(index, 11).number(year.gkal).style(styleCell);
 
@@ -308,9 +359,11 @@ export const generateExcel = async (
         ws.cell(index, 6).number(kvartal.procentage).style(styleCell);
         ws.cell(index, 7).number(kvartal.sold).style(styleCell);
         ws.cell(index, 8).number(kvartal.RUP_consumed).style(styleCell);
-        ws.cell(index, 9).number(kvartal.power).style(styleCell);
+        kvartal.power !== null
+          ? ws.cell(index, 9).number(kvartal.power).style(styleCell)
+          : ws.cell(index, 9).string("").style(styleCell);
         ws.cell(index, 10)
-          .string(kvartal.plus ? "" : "+")
+          .string(kvartal.plus ? "+" : "")
           .style(styleCell);
         ws.cell(index, 11).number(kvartal.gkal).style(styleCell);
 
@@ -327,9 +380,11 @@ export const generateExcel = async (
           ws.cell(index, 6).number(month.procentage).style(styleCell);
           ws.cell(index, 7).number(month.sold).style(styleCell);
           ws.cell(index, 8).number(month.RUP_consumed).style(styleCell);
-          ws.cell(index, 9).number(month.power).style(styleCell);
+          month.power !== null
+            ? ws.cell(index, 9).number(month.power).style(styleCell)
+            : ws.cell(index, 9).string("").style(styleCell);
           ws.cell(index, 10)
-            .string(month.plus ? "" : "+")
+            .string(month.plus ? "+" : "")
             .style(styleCell);
           ws.cell(index, 11).number(month.gkal).style(styleCell);
 
@@ -346,9 +401,11 @@ export const generateExcel = async (
             ws.cell(index, 6).number(day.procentage).style(styleCell);
             ws.cell(index, 7).number(day.sold).style(styleCell);
             ws.cell(index, 8).number(day.RUP_consumed).style(styleCell);
-            ws.cell(index, 9).number(day.power).style(styleCell);
+            day.power !== null
+              ? ws.cell(index, 9).number(day.power).style(styleCell)
+              : ws.cell(index, 9).string("").style(styleCell);
             ws.cell(index, 10)
-              .string(day.plus ? "" : "+")
+              .string(day.plus ? "+" : "")
               .style(styleCell);
             ws.cell(index, 11).number(day.gkal).style(styleCell);
 

@@ -1,5 +1,4 @@
 import express from "express";
-import fs from "fs";
 import cors from "cors";
 import { getDays, getYears } from "./db/get_data";
 import { updateData } from "./db/update_data";
@@ -18,7 +17,13 @@ const port = process.env.PORT || 3000;
 app.use(
   cors({
     credentials: true,
-    origin: ["http://10.1.15.244", "http://localhost:3000"],
+    origin: [
+      "http://10.1.15.244",
+      "http://localhost:3000",
+      "http://10.1.22.2",
+      "http://uisvr",
+      "http://uisvr.sckk",
+    ],
   })
 );
 // Добавляем парсер Cookies
