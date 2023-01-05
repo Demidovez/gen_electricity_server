@@ -38,23 +38,27 @@ export const generateExcel = async (
       if (monthIndex > -1) {
         const monthFound = months[monthIndex];
 
+        const lastDay = [...monthFound.children, day].sort(
+          (a, b) =>
+            new Date((b as IDay).date).getTime() -
+            new Date((a as IDay).date).getTime()
+        )[0];
+
         months[monthIndex] = {
           ...monthFound,
-          production: monthFound.production + day.production,
-          total_consumed: monthFound.total_consumed + day.total_consumed,
-          ZBC_consumed: monthFound.ZBC_consumed + day.ZBC_consumed,
-          generation: monthFound.generation + day.generation,
+          production: lastDay.production,
+          total_consumed: lastDay.total_consumed,
+          ZBC_consumed: lastDay.ZBC_consumed,
+          generation: lastDay.generation,
           procentage: Number(
-            Number(
-              ((monthFound.generation + day.generation) /
-                (monthFound.total_consumed + day.total_consumed)) *
-                100
-            ).toFixed(2)
+            Number((lastDay.generation / lastDay.total_consumed) * 100).toFixed(
+              2
+            )
           ),
-          sold: monthFound.sold + day.sold,
-          RUP_consumed: monthFound.RUP_consumed + day.RUP_consumed,
+          sold: lastDay.sold,
+          RUP_consumed: lastDay.RUP_consumed,
           power: null,
-          gkal: monthFound.gkal + day.gkal,
+          gkal: lastDay.gkal,
           children: isExpanded ? [...monthFound.children, day] : [],
           shadow_children: [...monthFound.shadow_children, day],
         };
@@ -88,7 +92,7 @@ export const generateExcel = async (
         "" +
           month.shadow_children.reduce((a, b) => a + (b.power || 0), 0) /
             month.shadow_children.length
-      ).toFixed(2),
+      ).toFixed(1),
       plus:
         month.shadow_children.reduce((a, b) => a + +b.plus, 0) >=
         month.shadow_children.length / 2,

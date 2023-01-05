@@ -18,9 +18,9 @@ app.use(
   cors({
     credentials: true,
     origin: [
-      "http://10.1.15.244",
+      "http://172.27.70.9",
       "http://localhost:3000",
-      "http://10.1.22.2",
+      "http://172.27.70.10",
       "http://uisvr",
       "http://uisvr.sckk",
     ],

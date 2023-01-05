@@ -5,5 +5,8 @@ services:
     restart: unless-stopped
     image: gen_electricity_server
     container_name: gen_electricity_server_co
+    volumes:
+      - "/etc/timezone:/etc/timezone:ro"
+      - "/etc/localtime:/etc/localtime:ro"
     ports:
-      - "5107:5107"
+      - "5011:5011"

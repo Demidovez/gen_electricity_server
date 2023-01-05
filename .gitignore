@@ -1,2 +1,8 @@
 node_modules/
 data/
+.env*
+users.txt
+*.png
+html/index_*
+sessions_db*
+gen_electricity_server.rar
