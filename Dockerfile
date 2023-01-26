@@ -1,8 +1,12 @@
-FROM node:16-alpine
-EXPOSE 5011
+FROM node:19.4-alpine
+
 WORKDIR /usr/app
+
 COPY package*.json ./
-RUN npm install
+
 ENV TZ Europe/Minsk
+RUN npm install
+
 COPY . .
+
 ENTRYPOINT [ "npm", "start" ]

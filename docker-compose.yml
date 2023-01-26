@@ -4,9 +4,13 @@ services:
     build: .
     restart: unless-stopped
     image: gen_electricity_server
-    container_name: gen_electricity_server_co
+    container_name: GenElectricityServer
+    env_file: ./.env
     volumes:
       - "/etc/timezone:/etc/timezone:ro"
       - "/etc/localtime:/etc/localtime:ro"
+    volumes:
+      - /etc/timezone:/etc/timezone
+      - /etc/localtime:/etc/localtime
     ports:
-      - "5011:5011"
+      - 5011:5011
